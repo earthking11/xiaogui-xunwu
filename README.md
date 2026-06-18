@@ -12,3 +12,33 @@
 开发设计见：
 
 `../docs/superpowers/specs/2026-06-18-xiaogui-xunwu-design.md`
+
+## 本地运行
+
+首次运行前先安装依赖：
+
+```sh
+flutter pub get
+```
+
+连接 Android 手机或模拟器后运行：
+
+```sh
+flutter run
+```
+
+进入 App 右上角设置，填写 MiMo API Key。Key 只保存在本机安全存储里，不会写入源码。
+
+## 打包 APK
+
+生成 debug APK：
+
+```sh
+flutter build apk --debug --target-platform android-arm64
+```
+
+APK 输出位置：
+
+```text
+build/app/outputs/flutter-apk/app-debug.apk
+```
