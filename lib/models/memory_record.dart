@@ -141,6 +141,7 @@ class MemoryRecord {
     double? aiConfidence,
     RecordStatus? status,
     String? errorMessage,
+    bool clearErrorMessage = false,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -160,7 +161,9 @@ class MemoryRecord {
       aiSearchSummary: aiSearchSummary ?? this.aiSearchSummary,
       aiConfidence: aiConfidence ?? this.aiConfidence,
       status: status ?? this.status,
-      errorMessage: errorMessage ?? this.errorMessage,
+      errorMessage: clearErrorMessage
+          ? null
+          : errorMessage ?? this.errorMessage,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
