@@ -1,3 +1,4 @@
+import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/app_theme.dart';
@@ -6,12 +7,14 @@ class HomePage extends StatefulWidget {
   const HomePage({
     super.key,
     required this.pendingCount,
+    required this.cameraController,
     required this.onCapturePressed,
     required this.onSearchSubmitted,
     required this.onSettingsPressed,
   });
 
   final int pendingCount;
+  final CameraController? cameraController;
   final VoidCallback? onCapturePressed;
   final ValueChanged<String>? onSearchSubmitted;
   final VoidCallback? onSettingsPressed;
@@ -62,21 +65,25 @@ class _HomePageState extends State<HomePage> {
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
-                      Container(
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFE8F1EC),
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [Color(0xFFEDF7F1), Color(0xFFDDEBE4)],
+                      if (widget.cameraController != null &&
+                          widget.cameraController!.value.isInitialized)
+                        CameraPreview(widget.cameraController!)
+                      else
+                        Container(
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFE8F1EC),
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [Color(0xFFEDF7F1), Color(0xFFDDEBE4)],
+                            ),
+                          ),
+                          alignment: Alignment.center,
+                          child: const Text(
+                            '相机准备中',
+                            style: TextStyle(color: Color(0xFF6B7C73)),
                           ),
                         ),
-                        alignment: Alignment.center,
-                        child: const Text(
-                          '相机准备中',
-                          style: TextStyle(color: Color(0xFF6B7C73)),
-                        ),
-                      ),
                       Positioned(
                         top: 14,
                         left: 14,

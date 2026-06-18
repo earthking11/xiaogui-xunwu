@@ -10,6 +10,7 @@ void main() {
         const MaterialApp(
           home: HomePage(
             pendingCount: 1,
+            cameraController: null,
             onCapturePressed: null,
             onSearchSubmitted: null,
             onSettingsPressed: null,
