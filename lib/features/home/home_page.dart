@@ -11,6 +11,7 @@ class HomePage extends StatefulWidget {
     required this.onCapturePressed,
     required this.onSearchSubmitted,
     required this.onSettingsPressed,
+    required this.onStatusPressed,
   });
 
   final int pendingCount;
@@ -18,6 +19,7 @@ class HomePage extends StatefulWidget {
   final VoidCallback? onCapturePressed;
   final ValueChanged<String>? onSearchSubmitted;
   final VoidCallback? onSettingsPressed;
+  final VoidCallback? onStatusPressed;
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -87,7 +89,10 @@ class _HomePageState extends State<HomePage> {
                       Positioned(
                         top: 14,
                         left: 14,
-                        child: _StatusChip(pendingCount: widget.pendingCount),
+                        child: _StatusChip(
+                          pendingCount: widget.pendingCount,
+                          onPressed: widget.onStatusPressed,
+                        ),
                       ),
                     ],
                   ),
@@ -126,24 +131,42 @@ class _HomePageState extends State<HomePage> {
 }
 
 class _StatusChip extends StatelessWidget {
-  const _StatusChip({required this.pendingCount});
+  const _StatusChip({required this.pendingCount, required this.onPressed});
 
   final int pendingCount;
+  final VoidCallback? onPressed;
 
   @override
   Widget build(BuildContext context) {
     final text = pendingCount == 0 ? '记忆库已就绪' : '$pendingCount 张照片待识别';
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.92),
+    return Material(
+      color: Colors.white.withValues(alpha: 0.92),
+      borderRadius: BorderRadius.circular(999),
+      child: InkWell(
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: XunwuColors.line),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        child: Text(
-          text,
-          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+        onTap: onPressed,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: XunwuColors.line),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  text,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                const Icon(Icons.chevron_right_rounded, size: 16),
+              ],
+            ),
+          ),
         ),
       ),
     );

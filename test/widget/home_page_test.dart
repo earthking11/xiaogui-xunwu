@@ -14,6 +14,7 @@ void main() {
             onCapturePressed: null,
             onSearchSubmitted: null,
             onSettingsPressed: null,
+            onStatusPressed: null,
           ),
         ),
       );
@@ -21,6 +22,7 @@ void main() {
       expect(find.text('小龟寻物'), findsOneWidget);
       expect(find.text('1 张照片待识别'), findsOneWidget);
       expect(find.byIcon(Icons.camera_alt_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
       expect(find.byType(TextField), findsOneWidget);
       expect(find.text('问问小龟：我的东西放哪了？'), findsOneWidget);
     },

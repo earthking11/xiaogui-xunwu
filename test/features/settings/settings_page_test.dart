@@ -12,6 +12,7 @@ void main() {
           onSave: (value) async {
             saved = value;
           },
+          onTestApiKey: (_) async {},
         ),
       ),
     );

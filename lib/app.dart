@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'core/app_theme.dart';
 import 'features/home/capture_controller.dart';
 import 'features/home/home_page.dart';
+import 'features/recognition/recognition_queue_page.dart';
 import 'features/search/search_result_page.dart';
 import 'features/settings/settings_page.dart';
 import 'services/api_key_store.dart';
@@ -157,6 +158,9 @@ class _XiaoguiXunwuAppState extends State<XiaoguiXunwuApp> {
           onSave: (value) async {
             await _apiKeyStore.saveApiKey(value);
           },
+          onTestApiKey: (value) async {
+            await MimoApiClient().testConnection(apiKey: value);
+          },
         ),
       ),
     );
@@ -184,6 +188,19 @@ class _XiaoguiXunwuAppState extends State<XiaoguiXunwuApp> {
     );
   }
 
+  Future<void> _openRecognitionQueue(BuildContext context) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => RecognitionQueuePage(
+          repository: _repository,
+          recognitionService: _recognitionService,
+          onRecordsChanged: _reloadPendingCount,
+        ),
+      ),
+    );
+    await _reloadPendingCount();
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -203,6 +220,9 @@ class _XiaoguiXunwuAppState extends State<XiaoguiXunwuApp> {
                 : null,
             onSettingsPressed: _bootstrapped
                 ? () => _openSettings(context)
+                : null,
+            onStatusPressed: _bootstrapped
+                ? () => _openRecognitionQueue(context)
                 : null,
           );
         },
