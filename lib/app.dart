@@ -4,11 +4,14 @@ import 'package:flutter/material.dart';
 import 'core/app_theme.dart';
 import 'features/home/capture_controller.dart';
 import 'features/home/home_page.dart';
+import 'features/search/search_result_page.dart';
+import 'features/settings/settings_page.dart';
 import 'services/api_key_store.dart';
 import 'services/memory_repository.dart';
 import 'services/mimo_api_client.dart';
 import 'services/photo_storage_service.dart';
 import 'services/recognition_service.dart';
+import 'services/search_service.dart';
 import 'services/sqlite_memory_repository.dart';
 
 class XiaoguiXunwuApp extends StatefulWidget {
@@ -20,7 +23,9 @@ class XiaoguiXunwuApp extends StatefulWidget {
 
 class _XiaoguiXunwuAppState extends State<XiaoguiXunwuApp> {
   late final MemoryRepository _repository;
+  late final ApiKeyStore _apiKeyStore;
   late final RecognitionService _recognitionService;
+  late final SearchService _searchService;
   CaptureController? _captureController;
   CameraController? _cameraController;
   int _pendingCount = 0;
@@ -42,11 +47,16 @@ class _XiaoguiXunwuAppState extends State<XiaoguiXunwuApp> {
     _repository = SqliteMemoryRepository();
     await _repository.initialize();
 
-    final apiKeyStore = SecureApiKeyStore();
+    _apiKeyStore = SecureApiKeyStore();
     final mimoApiClient = MimoApiClient();
     _recognitionService = RecognitionService(
       repository: _repository,
-      apiKeyStore: apiKeyStore,
+      apiKeyStore: _apiKeyStore,
+      mimoApiClient: mimoApiClient,
+    );
+    _searchService = SearchService(
+      repository: _repository,
+      apiKeyStore: _apiKeyStore,
       mimoApiClient: mimoApiClient,
     );
     _captureController = CaptureController(
@@ -103,6 +113,44 @@ class _XiaoguiXunwuAppState extends State<XiaoguiXunwuApp> {
     ).showSnackBar(const SnackBar(content: Text('已保存，正在识别')));
   }
 
+  Future<void> _openSettings(BuildContext context) async {
+    final currentKey = await _apiKeyStore.readApiKey();
+    if (!context.mounted) return;
+
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => SettingsPage(
+          initialApiKey: currentKey,
+          onSave: (value) async {
+            await _apiKeyStore.saveApiKey(value);
+          },
+        ),
+      ),
+    );
+
+    await _recognitionService.processBacklog();
+    await _reloadPendingCount();
+  }
+
+  Future<void> _search(BuildContext context, String question) async {
+    final trimmed = question.trim();
+    if (trimmed.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('先输入你想找什么')));
+      return;
+    }
+
+    final result = await _searchService.search(trimmed);
+    if (!context.mounted) return;
+
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => SearchResultPage(question: trimmed, result: result),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -117,8 +165,12 @@ class _XiaoguiXunwuAppState extends State<XiaoguiXunwuApp> {
             onCapturePressed: _bootstrapped
                 ? () => _capturePhoto(context)
                 : null,
-            onSearchSubmitted: null,
-            onSettingsPressed: null,
+            onSearchSubmitted: _bootstrapped
+                ? (question) => _search(context, question)
+                : null,
+            onSettingsPressed: _bootstrapped
+                ? () => _openSettings(context)
+                : null,
           );
         },
       ),
