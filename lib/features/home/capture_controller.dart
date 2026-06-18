@@ -40,7 +40,6 @@ class CaptureController {
   }) async {
     final recordId = _idGenerator();
     final now = _now().toUtc();
-    final position = await _locationReader();
     final photo = await _photoStorageService.saveJpegBytes(
       recordId: recordId,
       jpegBytes: jpegBytes,
@@ -50,9 +49,9 @@ class CaptureController {
       photoPath: photo.photoPath,
       thumbnailPath: photo.thumbnailPath,
       capturedAt: now,
-      gpsLatitude: position?.latitude,
-      gpsLongitude: position?.longitude,
-      gpsAccuracy: position?.accuracy,
+      gpsLatitude: null,
+      gpsLongitude: null,
+      gpsAccuracy: null,
       userLocationNote: userLocationNote,
       aiMainObjects: const [],
       aiAliases: const [],
@@ -66,8 +65,20 @@ class CaptureController {
       updatedAt: now,
     );
     await _repository.upsert(record);
+    final position = await _locationReader();
+    final savedRecord = position == null
+        ? record
+        : record.copyWith(
+            gpsLatitude: position.latitude,
+            gpsLongitude: position.longitude,
+            gpsAccuracy: position.accuracy,
+            updatedAt: _now().toUtc(),
+          );
+    if (position != null) {
+      await _repository.upsert(savedRecord);
+    }
     unawaited(_recognitionService.recognize(recordId));
-    return record;
+    return savedRecord;
   }
 }
 
@@ -84,7 +95,13 @@ Future<Position?> _defaultLocationReader() async {
     return null;
   }
 
-  return Geolocator.getCurrentPosition(
-    locationSettings: const LocationSettings(accuracy: LocationAccuracy.medium),
-  );
+  try {
+    return await Geolocator.getCurrentPosition(
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.medium,
+      ),
+    ).timeout(const Duration(seconds: 3));
+  } on Exception {
+    return null;
+  }
 }

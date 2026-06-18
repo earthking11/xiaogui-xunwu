@@ -34,11 +34,11 @@ flutter run
 生成 debug APK：
 
 ```sh
-flutter build apk --debug --target-platform android-arm64
+scripts/build_debug_apk.sh
 ```
 
 APK 输出位置：
 
 ```text
-build/app/outputs/flutter-apk/app-debug.apk
+build/app/outputs/flutter-apk/小龟寻物-debug.apk
 ```

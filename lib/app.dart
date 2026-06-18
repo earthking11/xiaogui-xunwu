@@ -30,6 +30,7 @@ class _XiaoguiXunwuAppState extends State<XiaoguiXunwuApp> {
   CameraController? _cameraController;
   int _pendingCount = 0;
   bool _bootstrapped = false;
+  bool _capturing = false;
 
   @override
   void initState() {
@@ -44,49 +45,55 @@ class _XiaoguiXunwuAppState extends State<XiaoguiXunwuApp> {
   }
 
   Future<void> _bootstrap() async {
-    _repository = SqliteMemoryRepository();
-    await _repository.initialize();
+    try {
+      _repository = SqliteMemoryRepository();
+      await _repository.initialize();
 
-    _apiKeyStore = SecureApiKeyStore();
-    final mimoApiClient = MimoApiClient();
-    _recognitionService = RecognitionService(
-      repository: _repository,
-      apiKeyStore: _apiKeyStore,
-      mimoApiClient: mimoApiClient,
-    );
-    _searchService = SearchService(
-      repository: _repository,
-      apiKeyStore: _apiKeyStore,
-      mimoApiClient: mimoApiClient,
-    );
-    _captureController = CaptureController(
-      repository: _repository,
-      photoStorageService: PhotoStorageService(),
-      recognitionService: _recognitionService,
-    );
+      _apiKeyStore = SecureApiKeyStore();
+      final mimoApiClient = MimoApiClient();
+      _recognitionService = RecognitionService(
+        repository: _repository,
+        apiKeyStore: _apiKeyStore,
+        mimoApiClient: mimoApiClient,
+      );
+      _searchService = SearchService(
+        repository: _repository,
+        apiKeyStore: _apiKeyStore,
+        mimoApiClient: mimoApiClient,
+      );
+      _captureController = CaptureController(
+        repository: _repository,
+        photoStorageService: PhotoStorageService(),
+        recognitionService: _recognitionService,
+      );
 
-    await _initializeCamera();
-    await _recognitionService.processBacklog();
-    await _reloadPendingCount();
-
-    if (mounted) {
-      setState(() {
-        _bootstrapped = true;
-      });
+      await _initializeCamera();
+      await _recognitionService.processBacklog();
+      await _reloadPendingCount();
+    } finally {
+      if (mounted) {
+        setState(() {
+          _bootstrapped = true;
+        });
+      }
     }
   }
 
   Future<void> _initializeCamera() async {
-    final cameras = await availableCameras();
-    if (cameras.isEmpty) return;
+    try {
+      final cameras = await availableCameras();
+      if (cameras.isEmpty) return;
 
-    final controller = CameraController(
-      cameras.first,
-      ResolutionPreset.medium,
-      enableAudio: false,
-    );
-    await controller.initialize();
-    _cameraController = controller;
+      final controller = CameraController(
+        cameras.first,
+        ResolutionPreset.medium,
+        enableAudio: false,
+      );
+      await controller.initialize();
+      _cameraController = controller;
+    } on CameraException {
+      _cameraController = null;
+    }
   }
 
   Future<void> _reloadPendingCount() async {
@@ -100,17 +107,43 @@ class _XiaoguiXunwuAppState extends State<XiaoguiXunwuApp> {
   Future<void> _capturePhoto(BuildContext context) async {
     final camera = _cameraController;
     final capture = _captureController;
-    if (!_bootstrapped || camera == null || capture == null) return;
+    if (!_bootstrapped || capture == null || _capturing) return;
+    if (camera == null || !camera.value.isInitialized) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('相机还没准备好，请检查相机权限')));
+      return;
+    }
 
-    final image = await camera.takePicture();
-    final bytes = await image.readAsBytes();
-    await capture.saveCapture(jpegBytes: bytes);
-    await _reloadPendingCount();
-
-    if (!context.mounted) return;
+    setState(() {
+      _capturing = true;
+    });
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(const SnackBar(content: Text('已保存，正在识别')));
+    ).showSnackBar(const SnackBar(content: Text('正在保存照片')));
+
+    try {
+      final image = await camera.takePicture();
+      final bytes = await image.readAsBytes();
+      await capture.saveCapture(jpegBytes: bytes);
+      await _reloadPendingCount();
+
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('已保存，正在识别')));
+    } on Exception {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('拍照失败，请重新试一次')));
+    } finally {
+      if (mounted) {
+        setState(() {
+          _capturing = false;
+        });
+      }
+    }
   }
 
   Future<void> _openSettings(BuildContext context) async {

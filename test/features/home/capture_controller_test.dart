@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -40,6 +41,37 @@ void main() {
     );
     expect(recognition.recognizedIds, ['record-1']);
   });
+
+  test(
+    'saveCapture persists photo record before waiting for location',
+    () async {
+      final repository = FakeCaptureRepository();
+      final photoStorage = FakePhotoStorageService();
+      final recognition = FakeRecognitionService();
+      final locationCompleter = Completer<void>();
+      final controller = CaptureController(
+        repository: repository,
+        photoStorageService: photoStorage,
+        recognitionService: recognition,
+        locationReader: () async {
+          await locationCompleter.future;
+          return null;
+        },
+        now: () => DateTime.parse('2026-06-18T10:20:30.000Z'),
+        idGenerator: () => 'record-1',
+      );
+
+      final saveFuture = controller.saveCapture(jpegBytes: [1, 2, 3]);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(
+        (await repository.getById('record-1'))?.photoPath,
+        '/fake/record-1.jpg',
+      );
+      locationCompleter.complete();
+      await saveFuture;
+    },
+  );
 }
 
 class FakeCaptureRepository implements MemoryRepository {
