@@ -1,4 +1,4 @@
-package com.lidazuo.xiaogui_xunwu
+package app.xiaogui.xunwu
 
 import io.flutter.embedding.android.FlutterActivity
 
