@@ -210,7 +210,7 @@ class _RecordTile extends StatelessWidget {
                       if (record.errorMessage != null) ...[
                         const SizedBox(height: 6),
                         Text(
-                          record.errorMessage!,
+                          _friendlyError(record.errorMessage!),
                           style: const TextStyle(color: Color(0xFFB3261E)),
                         ),
                       ],
@@ -265,6 +265,14 @@ class _RecordTile extends StatelessWidget {
       case RecordStatus.recognized:
         return '已识别';
     }
+  }
+
+  String _friendlyError(String message) {
+    if (message.contains('Invalid HTTP header') ||
+        message.contains('FormatException')) {
+      return 'API Key 格式不对，请到设置页重新粘贴 MiMo 控制台里的完整 Key';
+    }
+    return message;
   }
 }
 

@@ -156,7 +156,7 @@ class _XiaoguiXunwuAppState extends State<XiaoguiXunwuApp> {
         builder: (_) => SettingsPage(
           initialApiKey: currentKey,
           onSave: (value) async {
-            await _apiKeyStore.saveApiKey(value);
+            await _apiKeyStore.saveApiKey(MimoApiClient.cleanApiKey(value));
           },
           onTestApiKey: (value) async {
             await MimoApiClient().testConnection(apiKey: value);

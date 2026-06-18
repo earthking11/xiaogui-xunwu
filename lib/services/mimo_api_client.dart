@@ -11,7 +11,7 @@ class MimoApiException implements Exception {
   final String message;
 
   @override
-  String toString() => 'MimoApiException: $message';
+  String toString() => message;
 }
 
 class MimoApiClient {
@@ -23,6 +23,20 @@ class MimoApiClient {
   );
 
   final http.Client _httpClient;
+
+  static String cleanApiKey(String apiKey) {
+    final cleaned = apiKey.trim();
+    if (cleaned.isEmpty) {
+      throw MimoApiException('请先填写 MiMo API Key');
+    }
+    final validBearerToken = RegExp(r'^[A-Za-z0-9._~+/=-]+$');
+    if (!validBearerToken.hasMatch(cleaned)) {
+      throw MimoApiException(
+        'API Key 格式不对，请粘贴 MiMo 控制台里的完整 Key，不要填写说明文字、中文或空格',
+      );
+    }
+    return cleaned;
+  }
 
   Future<RecognitionResult> recognizePhoto({
     required String apiKey,
@@ -472,14 +486,20 @@ class MimoApiClient {
     required String apiKey,
     required Map<String, Object?> body,
   }) async {
-    final response = await _httpClient.post(
-      _endpoint,
-      headers: {
-        'Authorization': 'Bearer $apiKey',
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode(body),
-    );
+    final cleanedApiKey = cleanApiKey(apiKey);
+    final http.Response response;
+    try {
+      response = await _httpClient.post(
+        _endpoint,
+        headers: {
+          'Authorization': 'Bearer $cleanedApiKey',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(body),
+      );
+    } on FormatException {
+      throw MimoApiException('API Key 格式不对，请重新粘贴 MiMo 控制台里的完整 Key');
+    }
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw MimoApiException('HTTP ${response.statusCode}: ${response.body}');
     }

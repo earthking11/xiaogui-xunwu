@@ -71,7 +71,9 @@ class _SettingsPageState extends State<SettingsPage> {
                       );
                     } on Exception catch (error) {
                       messenger.showSnackBar(
-                        SnackBar(content: Text('连接失败：$error')),
+                        SnackBar(
+                          content: Text('连接失败：${_friendlyError(error)}'),
+                        ),
                       );
                     } finally {
                       if (mounted) {
@@ -97,7 +99,20 @@ class _SettingsPageState extends State<SettingsPage> {
                     setState(() {
                       _saving = true;
                     });
-                    await widget.onSave(_controller.text.trim());
+                    final messenger = ScaffoldMessenger.of(context);
+                    try {
+                      await widget.onSave(_controller.text.trim());
+                    } on Exception catch (error) {
+                      messenger.showSnackBar(
+                        SnackBar(content: Text(_friendlyError(error))),
+                      );
+                      if (mounted) {
+                        setState(() {
+                          _saving = false;
+                        });
+                      }
+                      return;
+                    }
                     if (!context.mounted) return;
                     Navigator.of(context).pop();
                   },
@@ -112,5 +127,14 @@ class _SettingsPageState extends State<SettingsPage> {
         ],
       ),
     );
+  }
+
+  String _friendlyError(Object error) {
+    final message = error.toString();
+    if (message.contains('Invalid HTTP header') ||
+        message.contains('FormatException')) {
+      return 'API Key 格式不对，请重新粘贴 MiMo 控制台里的完整 Key';
+    }
+    return message;
   }
 }

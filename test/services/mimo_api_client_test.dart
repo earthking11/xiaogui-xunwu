@@ -101,4 +101,15 @@ void main() {
     expect(result.notFound, isFalse);
     expect(client.lastBody, contains('黑色转接头在哪'));
   });
+
+  test('invalid api key is rejected before sending request', () async {
+    final client = CapturingClient(jsonEncode({'ok': true}));
+    final api = MimoApiClient(httpClient: client);
+
+    expect(
+      api.testConnection(apiKey: '给安卓图标蒙版留了安全边距。'),
+      throwsA(isA<MimoApiException>()),
+    );
+    expect(client.lastRequest, isNull);
+  });
 }
