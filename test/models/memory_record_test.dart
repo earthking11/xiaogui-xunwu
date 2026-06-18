@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:xiaogui_xunwu/core/record_status.dart';
 import 'package:xiaogui_xunwu/models/memory_record.dart';
+import 'package:xiaogui_xunwu/models/mimo_results.dart';
 
 void main() {
   test('MemoryRecord round-trips through database map', () {
@@ -50,5 +51,24 @@ void main() {
       RecordStatus.recognized,
     );
     expect(RecordStatusX.fromStorageValue('failed'), RecordStatus.failed);
+  });
+
+  test('SearchResult parses match confidence', () {
+    final result = SearchResult.fromJson({
+      'answer': '可能在书桌右上角。',
+      'matches': [
+        {
+          'recordId': 'record-1',
+          'confidence': 0.86,
+          'reason': '问题提到黑色转接头，记录中有同名物品。',
+        },
+      ],
+      'notFound': false,
+    });
+
+    expect(result.matches.single.recordId, 'record-1');
+    expect(result.matches.single.confidence, 0.86);
+    expect(result.matches.single.reason, '问题提到黑色转接头，记录中有同名物品。');
+    expect(result.notFound, isFalse);
   });
 }

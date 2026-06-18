@@ -31,14 +31,20 @@ class RecognitionResult {
 }
 
 class SearchMatch {
-  const SearchMatch({required this.recordId, required this.reason});
+  const SearchMatch({
+    required this.recordId,
+    required this.confidence,
+    required this.reason,
+  });
 
   final String recordId;
+  final double confidence;
   final String reason;
 
   factory SearchMatch.fromJson(Map<String, Object?> json) {
     return SearchMatch(
       recordId: json['recordId'] as String? ?? '',
+      confidence: _doubleValue(json['confidence']) ?? 0,
       reason: json['reason'] as String? ?? '',
     );
   }
