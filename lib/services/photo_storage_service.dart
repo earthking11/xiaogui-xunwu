@@ -1,6 +1,6 @@
 import 'dart:io';
-import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart';
 import 'package:image/image.dart' as img;
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -36,18 +36,17 @@ class PhotoStorageService {
     final thumbnailPath = p.join(thumbsDir.path, '$recordId.jpg');
 
     await File(photoPath).writeAsBytes(jpegBytes, flush: true);
-    await File(
-      thumbnailPath,
-    ).writeAsBytes(_makeThumbnail(jpegBytes), flush: true);
+    final thumbnailBytes = await compute(_makeThumbnail, jpegBytes);
+    await File(thumbnailPath).writeAsBytes(thumbnailBytes, flush: true);
 
     return StoredPhoto(photoPath: photoPath, thumbnailPath: thumbnailPath);
   }
+}
 
-  Uint8List _makeThumbnail(List<int> jpegBytes) {
-    final decoded = img.decodeImage(Uint8List.fromList(jpegBytes));
-    if (decoded == null) return Uint8List.fromList(jpegBytes);
+Uint8List _makeThumbnail(List<int> jpegBytes) {
+  final decoded = img.decodeImage(Uint8List.fromList(jpegBytes));
+  if (decoded == null) return Uint8List.fromList(jpegBytes);
 
-    final thumb = img.copyResize(decoded, width: 480);
-    return Uint8List.fromList(img.encodeJpg(thumb, quality: 82));
-  }
+  final thumb = img.copyResize(decoded, width: 480);
+  return Uint8List.fromList(img.encodeJpg(thumb, quality: 82));
 }

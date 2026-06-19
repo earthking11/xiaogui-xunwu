@@ -12,6 +12,7 @@ class HomePage extends StatefulWidget {
     required this.onSearchSubmitted,
     required this.onSettingsPressed,
     required this.onStatusPressed,
+    required this.isPreparing,
   });
 
   final int pendingCount;
@@ -20,6 +21,7 @@ class HomePage extends StatefulWidget {
   final ValueChanged<String>? onSearchSubmitted;
   final VoidCallback? onSettingsPressed;
   final VoidCallback? onStatusPressed;
+  final bool isPreparing;
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -81,9 +83,13 @@ class _HomePageState extends State<HomePage> {
                             ),
                           ),
                           alignment: Alignment.center,
-                          child: const Text(
-                            '相机准备中',
-                            style: TextStyle(color: Color(0xFF6B7C73)),
+                          child: const Padding(
+                            padding: EdgeInsets.all(20),
+                            child: Text(
+                              '相机准备中，首次使用请允许相机权限',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(color: Color(0xFF6B7C73)),
+                            ),
                           ),
                         ),
                       Positioned(
@@ -109,7 +115,15 @@ class _HomePageState extends State<HomePage> {
                     foregroundColor: Colors.white,
                   ),
                   onPressed: widget.onCapturePressed,
-                  child: const Icon(Icons.camera_alt_rounded, size: 32),
+                  child: widget.isPreparing
+                      ? const SizedBox.square(
+                          dimension: 24,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Icon(Icons.camera_alt_rounded, size: 32),
                 ),
               ),
               const SizedBox(height: 14),

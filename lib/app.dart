@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 
@@ -22,9 +24,11 @@ class XiaoguiXunwuApp extends StatefulWidget {
   State<XiaoguiXunwuApp> createState() => _XiaoguiXunwuAppState();
 }
 
-class _XiaoguiXunwuAppState extends State<XiaoguiXunwuApp> {
+class _XiaoguiXunwuAppState extends State<XiaoguiXunwuApp>
+    with WidgetsBindingObserver {
   late final MemoryRepository _repository;
   late final ApiKeyStore _apiKeyStore;
+  late final MimoApiClient _mimoApiClient;
   late final RecognitionService _recognitionService;
   late final SearchService _searchService;
   CaptureController? _captureController;
@@ -32,17 +36,35 @@ class _XiaoguiXunwuAppState extends State<XiaoguiXunwuApp> {
   int _pendingCount = 0;
   bool _bootstrapped = false;
   bool _capturing = false;
+  bool _initializingCamera = false;
+  bool _processingBacklog = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _bootstrap();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _cameraController?.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (!_bootstrapped) return;
+    if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused) {
+      _disposeCamera();
+      return;
+    }
+    if (state == AppLifecycleState.resumed) {
+      unawaited(_initializeCamera());
+      _processBacklogInBackground();
+    }
   }
 
   Future<void> _bootstrap() async {
@@ -51,16 +73,16 @@ class _XiaoguiXunwuAppState extends State<XiaoguiXunwuApp> {
       await _repository.initialize();
 
       _apiKeyStore = SecureApiKeyStore();
-      final mimoApiClient = MimoApiClient();
+      _mimoApiClient = MimoApiClient();
       _recognitionService = RecognitionService(
         repository: _repository,
         apiKeyStore: _apiKeyStore,
-        mimoApiClient: mimoApiClient,
+        mimoApiClient: _mimoApiClient,
       );
       _searchService = SearchService(
         repository: _repository,
         apiKeyStore: _apiKeyStore,
-        mimoApiClient: mimoApiClient,
+        mimoApiClient: _mimoApiClient,
       );
       _captureController = CaptureController(
         repository: _repository,
@@ -69,7 +91,6 @@ class _XiaoguiXunwuAppState extends State<XiaoguiXunwuApp> {
       );
 
       await _initializeCamera();
-      await _recognitionService.processBacklog();
       await _reloadPendingCount();
     } finally {
       if (mounted) {
@@ -78,10 +99,15 @@ class _XiaoguiXunwuAppState extends State<XiaoguiXunwuApp> {
         });
       }
     }
+    _processBacklogInBackground();
   }
 
   Future<void> _initializeCamera() async {
+    if (_initializingCamera) return;
+    _initializingCamera = true;
     try {
+      await _cameraController?.dispose();
+      _cameraController = null;
       final cameras = await availableCameras();
       if (cameras.isEmpty) return;
 
@@ -92,9 +118,33 @@ class _XiaoguiXunwuAppState extends State<XiaoguiXunwuApp> {
       );
       await controller.initialize();
       _cameraController = controller;
+      if (mounted) setState(() {});
     } on CameraException {
       _cameraController = null;
+    } finally {
+      _initializingCamera = false;
     }
+  }
+
+  Future<void> _disposeCamera() async {
+    final controller = _cameraController;
+    _cameraController = null;
+    if (mounted) setState(() {});
+    await controller?.dispose();
+  }
+
+  void _processBacklogInBackground() {
+    if (_processingBacklog || !_bootstrapped) return;
+    _processingBacklog = true;
+    unawaited(
+      _recognitionService
+          .processBacklog()
+          .whenComplete(() {
+            _processingBacklog = false;
+          })
+          .then((_) => _reloadPendingCount())
+          .catchError((_) {}),
+    );
   }
 
   Future<void> _reloadPendingCount() async {
@@ -159,13 +209,13 @@ class _XiaoguiXunwuAppState extends State<XiaoguiXunwuApp> {
             await _apiKeyStore.saveApiKey(MimoApiClient.cleanApiKey(value));
           },
           onTestApiKey: (value) async {
-            await MimoApiClient().testConnection(apiKey: value);
+            await _mimoApiClient.testConnection(apiKey: value);
           },
         ),
       ),
     );
 
-    await _recognitionService.processBacklog();
+    _processBacklogInBackground();
     await _reloadPendingCount();
   }
 
@@ -224,6 +274,7 @@ class _XiaoguiXunwuAppState extends State<XiaoguiXunwuApp> {
             onStatusPressed: _bootstrapped
                 ? () => _openRecognitionQueue(context)
                 : null,
+            isPreparing: !_bootstrapped,
           );
         },
       ),

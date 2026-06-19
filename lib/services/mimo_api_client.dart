@@ -501,9 +501,22 @@ class MimoApiClient {
       throw MimoApiException('API Key 格式不对，请重新粘贴 MiMo 控制台里的完整 Key');
     }
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw MimoApiException('HTTP ${response.statusCode}: ${response.body}');
+      throw MimoApiException(_messageForStatusCode(response.statusCode));
     }
     return jsonDecode(response.body) as Map<String, Object?>;
+  }
+
+  String _messageForStatusCode(int statusCode) {
+    if (statusCode == 401 || statusCode == 403) {
+      return 'MiMo API Key 无效或已过期，请在设置页重新填写';
+    }
+    if (statusCode == 429) {
+      return 'MiMo 请求太频繁了，请稍后再试';
+    }
+    if (statusCode >= 500) {
+      return 'MiMo 服务暂时异常，请稍后重试';
+    }
+    return 'MiMo 请求失败，状态码 $statusCode';
   }
 
   Map<String, Object?> _contentAsJson(Map<String, Object?> responseJson) {

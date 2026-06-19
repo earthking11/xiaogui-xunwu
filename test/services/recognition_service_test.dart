@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:xiaogui_xunwu/core/record_status.dart';
 import 'package:xiaogui_xunwu/models/memory_record.dart';
@@ -105,6 +107,7 @@ void main() {
     final repository = FakeMemoryRepository()
       ..seed(record('pending', RecordStatus.pending))
       ..seed(record('failed', RecordStatus.failed))
+      ..seed(record('stale', RecordStatus.recognizing))
       ..seed(record('done', RecordStatus.recognized));
     final keyStore = InMemoryApiKeyStore();
     await keyStore.saveApiKey('test-key');
@@ -125,9 +128,39 @@ void main() {
       (await repository.getById('failed'))!.status,
       RecordStatus.recognized,
     );
+    expect(
+      (await repository.getById('stale'))!.status,
+      RecordStatus.recognized,
+    );
     expect((await repository.getById('done'))!.status, RecordStatus.recognized);
-    expect(client.calls, 2);
+    expect(client.calls, 3);
   });
+
+  test(
+    'recognize ignores duplicate in-flight request for same record',
+    () async {
+      final repository = FakeMemoryRepository()
+        ..seed(record('card', RecordStatus.pending));
+      final keyStore = InMemoryApiKeyStore();
+      await keyStore.saveApiKey('test-key');
+      final client = FakeMimoApiClient.success()
+        ..waitBeforeResponse = Completer<void>();
+      final recognitionService = service(
+        repository: repository,
+        keyStore: keyStore,
+        client: client,
+      );
+
+      final first = recognitionService.recognize('card');
+      await Future<void>.delayed(Duration.zero);
+      final second = recognitionService.recognize('card');
+
+      client.waitBeforeResponse!.complete();
+      await Future.wait([first, second]);
+
+      expect(client.calls, 1);
+    },
+  );
 }
 
 class FakeMemoryRepository implements MemoryRepository {
@@ -168,7 +201,8 @@ class FakeMemoryRepository implements MemoryRepository {
         .where(
           (record) =>
               record.status == RecordStatus.pending ||
-              record.status == RecordStatus.failed,
+              record.status == RecordStatus.failed ||
+              record.status == RecordStatus.recognizing,
         )
         .toList();
   }
@@ -186,6 +220,7 @@ class FakeMimoApiClient extends MimoApiClient {
 
   final bool shouldThrow;
   int calls = 0;
+  Completer<void>? waitBeforeResponse;
 
   @override
   Future<RecognitionResult> recognizePhoto({
@@ -198,6 +233,7 @@ class FakeMimoApiClient extends MimoApiClient {
     required String? userLocationNote,
   }) async {
     calls += 1;
+    await waitBeforeResponse?.future;
     if (shouldThrow) {
       throw MimoApiException('model failed');
     }

@@ -65,20 +65,26 @@ class CaptureController {
       updatedAt: now,
     );
     await _repository.upsert(record);
-    final position = await _locationReader();
-    final savedRecord = position == null
-        ? record
-        : record.copyWith(
-            gpsLatitude: position.latitude,
-            gpsLongitude: position.longitude,
-            gpsAccuracy: position.accuracy,
-            updatedAt: _now().toUtc(),
-          );
-    if (position != null) {
-      await _repository.upsert(savedRecord);
-    }
+    unawaited(_attachLocation(recordId));
     unawaited(_recognitionService.recognize(recordId));
-    return savedRecord;
+    return record;
+  }
+
+  Future<void> _attachLocation(String recordId) async {
+    final position = await _locationReader();
+    if (position == null) return;
+
+    final current = await _repository.getById(recordId);
+    if (current == null) return;
+
+    await _repository.upsert(
+      current.copyWith(
+        gpsLatitude: position.latitude,
+        gpsLongitude: position.longitude,
+        gpsAccuracy: position.accuracy,
+        updatedAt: _now().toUtc(),
+      ),
+    );
   }
 }
 

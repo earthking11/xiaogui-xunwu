@@ -59,11 +59,12 @@ void main() {
   test('finds records that need recognition', () async {
     await repository.upsert(sampleRecord('pending', RecordStatus.pending));
     await repository.upsert(sampleRecord('failed', RecordStatus.failed));
+    await repository.upsert(sampleRecord('stale', RecordStatus.recognizing));
     await repository.upsert(sampleRecord('done', RecordStatus.recognized));
 
     final records = await repository.recordsNeedingRecognition();
 
-    expect(records.map((r) => r.recordId), ['pending', 'failed']);
+    expect(records.map((r) => r.recordId), ['pending', 'failed', 'stale']);
   });
 
   test('updates recognition result', () async {

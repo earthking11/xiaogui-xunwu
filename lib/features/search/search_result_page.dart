@@ -18,7 +18,6 @@ class SearchResultPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final top = result.matches.isEmpty ? null : result.matches.first;
     return Scaffold(
       appBar: AppBar(title: const Text('查找结果')),
       body: ListView(
@@ -37,32 +36,34 @@ class SearchResultPage extends StatelessWidget {
               height: 1.2,
             ),
           ),
-          if (top != null) ...[
+          for (final match in result.matches) ...[
             const SizedBox(height: 16),
             if (showPhoto) ...[
               ClipRRect(
                 borderRadius: BorderRadius.circular(18),
                 child: Image.file(
-                  File(top.record.photoPath),
+                  File(match.record.thumbnailPath),
                   fit: BoxFit.cover,
+                  cacheWidth: 900,
                 ),
               ),
               const SizedBox(height: 16),
             ],
-            _InfoRow(label: '匹配理由', value: top.reason),
+            _InfoRow(label: '匹配理由', value: match.reason),
             _InfoRow(
               label: '拍摄时间',
-              value: top.record.capturedAt.toLocal().toString(),
+              value: match.record.capturedAt.toLocal().toString(),
             ),
-            if (top.record.userLocationNote != null)
-              _InfoRow(label: '备注位置', value: top.record.userLocationNote!),
-            if (top.record.aiLocationGuess != null)
-              _InfoRow(label: 'AI 推测', value: top.record.aiLocationGuess!),
-            if (top.record.gpsLatitude != null &&
-                top.record.gpsLongitude != null)
+            if (match.record.userLocationNote != null)
+              _InfoRow(label: '备注位置', value: match.record.userLocationNote!),
+            if (match.record.aiLocationGuess != null)
+              _InfoRow(label: 'AI 推测', value: match.record.aiLocationGuess!),
+            if (match.record.gpsLatitude != null &&
+                match.record.gpsLongitude != null)
               _InfoRow(
                 label: 'GPS',
-                value: '${top.record.gpsLatitude}, ${top.record.gpsLongitude}',
+                value:
+                    '${match.record.gpsLatitude}, ${match.record.gpsLongitude}',
               ),
           ],
         ],

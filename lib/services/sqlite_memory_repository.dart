@@ -99,10 +99,11 @@ class SqliteMemoryRepository implements MemoryRepository {
     final db = await _db;
     final rows = await db.query(
       'memory_records',
-      where: 'status IN (?, ?)',
+      where: 'status IN (?, ?, ?)',
       whereArgs: [
         RecordStatus.pending.storageValue,
         RecordStatus.failed.storageValue,
+        RecordStatus.recognizing.storageValue,
       ],
       orderBy: 'created_at ASC',
     );

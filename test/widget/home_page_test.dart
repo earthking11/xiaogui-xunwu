@@ -15,6 +15,7 @@ void main() {
             onSearchSubmitted: null,
             onSettingsPressed: null,
             onStatusPressed: null,
+            isPreparing: false,
           ),
         ),
       );

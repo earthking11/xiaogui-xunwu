@@ -150,9 +150,7 @@ class _RecordTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final canRecognize =
-        record.status != RecordStatus.recognizing &&
-        record.status != RecordStatus.recognized;
+    final canRecognize = record.status != RecordStatus.recognized;
     return DecoratedBox(
       decoration: BoxDecoration(
         color: Colors.white,

@@ -27,6 +27,7 @@ class RecognitionService {
   final MimoApiClient _mimoApiClient;
   final PhotoBytesReader _photoBytesReader;
   final DateTime Function() _now;
+  final Set<String> _inFlight = {};
 
   Future<void> processBacklog() async {
     final records = await _repository.recordsNeedingRecognition();
@@ -36,6 +37,16 @@ class RecognitionService {
   }
 
   Future<void> recognize(String recordId) async {
+    if (_inFlight.contains(recordId)) return;
+    _inFlight.add(recordId);
+    try {
+      await _recognize(recordId);
+    } finally {
+      _inFlight.remove(recordId);
+    }
+  }
+
+  Future<void> _recognize(String recordId) async {
     final record = await _repository.getById(recordId);
     if (record == null) return;
 
