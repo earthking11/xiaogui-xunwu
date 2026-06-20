@@ -102,12 +102,31 @@ void main() {
     expect(client.lastBody, contains('黑色转接头在哪'));
   });
 
+  test(
+    'testConnection sends a supplied PNG image with thinking disabled',
+    () async {
+    final client = CapturingClient(jsonEncode({'ok': true}));
+    final api = MimoApiClient(httpClient: client);
+
+    await api.testConnection(
+      apiKey: 'test-key',
+      imageBytes: const [1, 2, 3],
+    );
+
+    expect(client.lastBody, contains('data:image/png;base64,AQID'));
+    expect(client.lastBody, contains('"thinking":{"type":"disabled"}'));
+    },
+  );
+
   test('invalid api key is rejected before sending request', () async {
     final client = CapturingClient(jsonEncode({'ok': true}));
     final api = MimoApiClient(httpClient: client);
 
     expect(
-      api.testConnection(apiKey: '给安卓图标蒙版留了安全边距。'),
+      api.testConnection(
+        apiKey: '给安卓图标蒙版留了安全边距。',
+        imageBytes: utf8.encode('test-image'),
+      ),
       throwsA(isA<MimoApiException>()),
     );
     expect(client.lastRequest, isNull);

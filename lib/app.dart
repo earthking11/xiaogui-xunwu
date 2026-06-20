@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'core/app_theme.dart';
 import 'features/home/capture_controller.dart';
@@ -209,7 +210,13 @@ class _XiaoguiXunwuAppState extends State<XiaoguiXunwuApp>
             await _apiKeyStore.saveApiKey(MimoApiClient.cleanApiKey(value));
           },
           onTestApiKey: (value) async {
-            await _mimoApiClient.testConnection(apiKey: value);
+            final image = await rootBundle.load(
+              'assets/images/mimo_connection_test.png',
+            );
+            await _mimoApiClient.testConnection(
+              apiKey: value,
+              imageBytes: image.buffer.asUint8List(),
+            );
           },
         ),
       ),
