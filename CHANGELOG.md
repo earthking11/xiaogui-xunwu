@@ -23,4 +23,4 @@
 
 - 已在 Android 模拟器完成“拍照、自动识别、查看记忆、自然语言查找”的完整链路验证。
 - `flutter test` 通过，26 项测试全绿。
-- Android arm64 debug APK 构建通过。
+- Android arm64 release APK 构建通过。
