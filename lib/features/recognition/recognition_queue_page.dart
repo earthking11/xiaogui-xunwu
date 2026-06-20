@@ -7,17 +7,20 @@ import '../../core/app_theme.dart';
 import '../../core/record_status.dart';
 import '../../models/memory_record.dart';
 import '../../services/memory_repository.dart';
+import '../../services/photo_storage_service.dart';
 import '../../services/recognition_service.dart';
 
 class RecognitionQueuePage extends StatefulWidget {
   const RecognitionQueuePage({
     super.key,
     required this.repository,
+    required this.photoStorageService,
     required this.recognitionService,
     required this.onRecordsChanged,
   });
 
   final MemoryRepository repository;
+  final PhotoStorageService photoStorageService;
   final RecognitionService recognitionService;
   final Future<void> Function() onRecordsChanged;
 
@@ -31,6 +34,7 @@ class _RecognitionQueuePageState extends State<RecognitionQueuePage> {
   final Set<String> _runningIds = {};
   bool _loading = true;
   bool _processingAll = false;
+  final Set<String> _deletingIds = {};
 
   @override
   void initState() {
@@ -73,6 +77,56 @@ class _RecognitionQueuePageState extends State<RecognitionQueuePage> {
     setState(() {
       _processingAll = false;
     });
+  }
+
+  Future<void> _deleteRecord(MemoryRecord record) async {
+    if (_deletingIds.contains(record.recordId)) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('删除这条记忆？'),
+        content: const Text('照片、缩略图和识别信息都会从小龟寻物中删除。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFFB3261E),
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('删除'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    setState(() {
+      _deletingIds.add(record.recordId);
+    });
+    try {
+      await widget.repository.delete(record.recordId);
+      await widget.photoStorageService.deleteStoredPhoto(
+        photoPath: record.photoPath,
+        thumbnailPath: record.thumbnailPath,
+      );
+      await widget.onRecordsChanged();
+      await _load();
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('已删除这条记忆')));
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _deletingIds.remove(record.recordId);
+        });
+      }
+    }
   }
 
   @override
@@ -128,6 +182,8 @@ class _RecognitionQueuePageState extends State<RecognitionQueuePage> {
                   timeText: _timeFormat.format(record.capturedAt.toLocal()),
                   running: _runningIds.contains(record.recordId),
                   onRecognize: () => _recognizeOne(record.recordId),
+                  deleting: _deletingIds.contains(record.recordId),
+                  onDelete: () => _deleteRecord(record),
                 );
               },
             ),
@@ -141,12 +197,16 @@ class _RecordTile extends StatelessWidget {
     required this.timeText,
     required this.running,
     required this.onRecognize,
+    required this.deleting,
+    required this.onDelete,
   });
 
   final MemoryRecord record;
   final String timeText;
   final bool running;
   final VoidCallback onRecognize;
+  final bool deleting;
+  final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -230,18 +290,36 @@ class _RecordTile extends StatelessWidget {
                 value: record.aiConfidence!.toStringAsFixed(2),
               ),
             const SizedBox(height: 10),
-            Align(
-              alignment: Alignment.centerRight,
-              child: OutlinedButton.icon(
-                onPressed: canRecognize && !running ? onRecognize : null,
-                icon: running
-                    ? const SizedBox.square(
-                        dimension: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.play_arrow_rounded),
-                label: Text(running ? '识别中' : '手动识别'),
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                OutlinedButton.icon(
+                  onPressed: deleting ? null : onDelete,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFFB3261E),
+                  ),
+                  icon: deleting
+                      ? const SizedBox.square(
+                          dimension: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.delete_outline_rounded),
+                  label: Text(deleting ? '删除中' : '删除'),
+                ),
+                const SizedBox(width: 8),
+                OutlinedButton.icon(
+                  onPressed: canRecognize && !running && !deleting
+                      ? onRecognize
+                      : null,
+                  icon: running
+                      ? const SizedBox.square(
+                          dimension: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.play_arrow_rounded),
+                  label: Text(running ? '识别中' : '手动识别'),
+                ),
+              ],
             ),
           ],
         ),

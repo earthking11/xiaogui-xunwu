@@ -24,4 +24,21 @@ void main() {
     expect(result.photoPath.contains('memory_photos'), isTrue);
     expect(result.thumbnailPath.contains('memory_thumbnails'), isTrue);
   });
+
+  test('deletes the original photo and thumbnail together', () async {
+    final tempDir = await Directory.systemTemp.createTemp('xunwu-photo-delete');
+    addTearDown(() => tempDir.delete(recursive: true));
+    final storage = PhotoStorageService(rootDirectory: tempDir);
+    final photo = File('${tempDir.path}/photo.jpg')..writeAsBytesSync([1]);
+    final thumbnail = File('${tempDir.path}/thumbnail.jpg')
+      ..writeAsBytesSync([2]);
+
+    await storage.deleteStoredPhoto(
+      photoPath: photo.path,
+      thumbnailPath: thumbnail.path,
+    );
+
+    expect(photo.existsSync(), isFalse);
+    expect(thumbnail.existsSync(), isFalse);
+  });
 }

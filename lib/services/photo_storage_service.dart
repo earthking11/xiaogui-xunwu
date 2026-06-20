@@ -41,6 +41,23 @@ class PhotoStorageService {
 
     return StoredPhoto(photoPath: photoPath, thumbnailPath: thumbnailPath);
   }
+
+  Future<void> deleteStoredPhoto({
+    required String photoPath,
+    required String thumbnailPath,
+  }) async {
+    await Future.wait([
+      _deleteIfExists(photoPath),
+      _deleteIfExists(thumbnailPath),
+    ]);
+  }
+
+  Future<void> _deleteIfExists(String path) async {
+    final file = File(path);
+    if (await file.exists()) {
+      await file.delete();
+    }
+  }
 }
 
 Uint8List _makeThumbnail(List<int> jpegBytes) {

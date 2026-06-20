@@ -250,6 +250,7 @@ class _XiaoguiXunwuAppState extends State<XiaoguiXunwuApp>
       MaterialPageRoute<void>(
         builder: (_) => RecognitionQueuePage(
           repository: _repository,
+          photoStorageService: PhotoStorageService(),
           recognitionService: _recognitionService,
           onRecordsChanged: _reloadPendingCount,
         ),
