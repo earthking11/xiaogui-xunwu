@@ -35,6 +35,12 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
+
+    packaging {
+        jniLibs {
+            excludes += setOf("**/armeabi-v7a/**", "**/x86_64/**")
+        }
+    }
 }
 
 kotlin {
