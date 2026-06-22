@@ -14,6 +14,8 @@ import 'services/api_key_store.dart';
 import 'services/memory_repository.dart';
 import 'services/mimo_api_client.dart';
 import 'services/photo_storage_service.dart';
+import 'services/readable_location_backfill_service.dart';
+import 'services/readable_location_service.dart';
 import 'services/recognition_service.dart';
 import 'services/search_service.dart';
 import 'services/sqlite_memory_repository.dart';
@@ -30,6 +32,8 @@ class _XiaoguiXunwuAppState extends State<XiaoguiXunwuApp>
   late final MemoryRepository _repository;
   late final ApiKeyStore _apiKeyStore;
   late final MimoApiClient _mimoApiClient;
+  late final ReadableLocationService _readableLocationService;
+  late final ReadableLocationBackfillService _locationBackfillService;
   late final RecognitionService _recognitionService;
   late final SearchService _searchService;
   CaptureController? _captureController;
@@ -75,6 +79,11 @@ class _XiaoguiXunwuAppState extends State<XiaoguiXunwuApp>
 
       _apiKeyStore = SecureApiKeyStore();
       _mimoApiClient = MimoApiClient();
+      _readableLocationService = ReadableLocationService();
+      _locationBackfillService = ReadableLocationBackfillService(
+        repository: _repository,
+        readableLocationService: _readableLocationService,
+      );
       _recognitionService = RecognitionService(
         repository: _repository,
         apiKeyStore: _apiKeyStore,
@@ -89,6 +98,7 @@ class _XiaoguiXunwuAppState extends State<XiaoguiXunwuApp>
         repository: _repository,
         photoStorageService: PhotoStorageService(),
         recognitionService: _recognitionService,
+        readableLocationService: _readableLocationService,
       );
 
       await _initializeCamera();
@@ -101,6 +111,7 @@ class _XiaoguiXunwuAppState extends State<XiaoguiXunwuApp>
       }
     }
     _processBacklogInBackground();
+    unawaited(_locationBackfillService.fillMissingLocations());
   }
 
   Future<void> _initializeCamera() async {
