@@ -7,6 +7,7 @@ import '../../core/record_status.dart';
 import '../../models/memory_record.dart';
 import '../../services/memory_repository.dart';
 import '../../services/photo_storage_service.dart';
+import '../../services/readable_location_service.dart';
 import '../../services/recognition_service.dart';
 
 typedef LocationReader = Future<Position?> Function();
@@ -17,12 +18,15 @@ class CaptureController {
     required MemoryRepository repository,
     required PhotoStorageService photoStorageService,
     required RecognitionService recognitionService,
+    ReadableLocationService? readableLocationService,
     LocationReader? locationReader,
     DateTime Function()? now,
     IdGenerator? idGenerator,
   }) : _repository = repository,
        _photoStorageService = photoStorageService,
        _recognitionService = recognitionService,
+       _readableLocationService =
+           readableLocationService ?? ReadableLocationService(),
        _locationReader = locationReader ?? _defaultLocationReader,
        _now = now ?? DateTime.now,
        _idGenerator = idGenerator ?? const Uuid().v4;
@@ -30,6 +34,7 @@ class CaptureController {
   final MemoryRepository _repository;
   final PhotoStorageService _photoStorageService;
   final RecognitionService _recognitionService;
+  final ReadableLocationService _readableLocationService;
   final LocationReader _locationReader;
   final DateTime Function() _now;
   final IdGenerator _idGenerator;
@@ -73,6 +78,10 @@ class CaptureController {
   Future<void> _attachLocation(String recordId) async {
     final position = await _locationReader();
     if (position == null) return;
+    final readableLocation = await _readableLocationService.resolve(
+      latitude: position.latitude,
+      longitude: position.longitude,
+    );
 
     final current = await _repository.getById(recordId);
     if (current == null) return;
@@ -82,6 +91,7 @@ class CaptureController {
         gpsLatitude: position.latitude,
         gpsLongitude: position.longitude,
         gpsAccuracy: position.accuracy,
+        readableLocation: readableLocation,
         updatedAt: _now().toUtc(),
       ),
     );

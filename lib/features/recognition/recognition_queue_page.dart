@@ -278,11 +278,12 @@ class _RecordTile extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
+            _Detail(label: '拍摄地点', value: record.readableLocation),
             _Detail(label: '位置备注', value: record.userLocationNote),
             _Detail(label: '主要物品', value: record.aiMainObjects.join('、')),
             _Detail(label: '别名', value: record.aiAliases.join('、')),
             _Detail(label: '场景', value: record.aiSceneDescription),
-            _Detail(label: '位置判断', value: record.aiLocationGuess),
+            _Detail(label: '室内线索', value: record.aiLocationGuess),
             _Detail(label: '搜索摘要', value: record.aiSearchSummary),
             if (record.aiConfidence != null)
               _Detail(

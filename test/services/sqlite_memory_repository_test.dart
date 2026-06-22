@@ -86,4 +86,19 @@ void main() {
     expect(updated.aiMainObjects, ['钥匙']);
     expect(updated.aiSearchSummary, '钥匙 玄关');
   });
+
+  test('stores a readable location alongside GPS coordinates', () async {
+    await repository.upsert(
+      sampleRecord('location', RecordStatus.recognized).copyWith(
+        gpsLatitude: 26.01,
+        gpsLongitude: 119.3,
+        readableLocation: '福建省福州市仓山区',
+      ),
+    );
+
+    final record = await repository.getById('location');
+
+    expect(record!.readableLocation, '福建省福州市仓山区');
+    expect(record.gpsLatitude, 26.01);
+  });
 }

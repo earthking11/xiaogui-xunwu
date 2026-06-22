@@ -8,7 +8,7 @@ import 'core/app_theme.dart';
 import 'features/home/capture_controller.dart';
 import 'features/home/home_page.dart';
 import 'features/recognition/recognition_queue_page.dart';
-import 'features/search/search_result_page.dart';
+import 'features/search/search_loading_page.dart';
 import 'features/settings/settings_page.dart';
 import 'services/api_key_store.dart';
 import 'services/memory_repository.dart';
@@ -235,12 +235,12 @@ class _XiaoguiXunwuAppState extends State<XiaoguiXunwuApp>
       return;
     }
 
-    final result = await _searchService.search(trimmed);
-    if (!context.mounted) return;
-
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => SearchResultPage(question: trimmed, result: result),
+        builder: (_) => SearchLoadingPage(
+          question: trimmed,
+          searchFuture: _searchService.search(trimmed),
+        ),
       ),
     );
   }

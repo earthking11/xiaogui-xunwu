@@ -12,6 +12,7 @@ class SqliteMemoryRepository implements MemoryRepository {
   SqliteMemoryRepository.fromDatabase(Database database) : _database = database;
 
   Database? _database;
+  static const _databaseVersion = 2;
 
   Future<Database> get _db async {
     final existing = _database;
@@ -19,7 +20,17 @@ class SqliteMemoryRepository implements MemoryRepository {
 
     final dir = await getApplicationDocumentsDirectory();
     final path = p.join(dir.path, 'xiaogui_xunwu.db');
-    final db = await openDatabase(path, version: 1);
+    final db = await openDatabase(
+      path,
+      version: _databaseVersion,
+      onUpgrade: (db, oldVersion, _) async {
+        if (oldVersion < 2) {
+          await db.execute(
+            'ALTER TABLE memory_records ADD COLUMN readable_location TEXT',
+          );
+        }
+      },
+    );
     _database = db;
     await initialize();
     return db;
@@ -37,6 +48,7 @@ class SqliteMemoryRepository implements MemoryRepository {
         gps_latitude REAL,
         gps_longitude REAL,
         gps_accuracy REAL,
+        readable_location TEXT,
         user_location_note TEXT,
         ai_main_objects TEXT NOT NULL,
         ai_aliases TEXT NOT NULL,

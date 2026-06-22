@@ -17,6 +17,7 @@ void main() {
       gpsLatitude: 26.0,
       gpsLongitude: 119.0,
       gpsAccuracy: 10,
+      readableLocation: '福建省福州市仓山区金山大道',
       userLocationNote: '书桌右上角透明盒旁',
       aiMainObjects: const ['黑色 Type-C 转接头'],
       aiAliases: const ['小黑头'],
@@ -50,8 +51,12 @@ void main() {
       ),
     );
 
-    expect(find.text('可能在书桌右上角透明盒旁。'), findsWidgets);
+    expect(
+      find.text('黑色 Type-C 转接头 可能在福建省福州市仓山区金山大道的书桌右上角透明盒旁。'),
+      findsOneWidget,
+    );
     expect(find.text('主要物品和摘要都匹配。'), findsOneWidget);
     expect(find.text('书桌右上角透明盒旁'), findsOneWidget);
+    expect(find.text('福建省福州市仓山区金山大道'), findsOneWidget);
   });
 }

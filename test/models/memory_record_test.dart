@@ -17,6 +17,7 @@ void main() {
       gpsLatitude: 26.01,
       gpsLongitude: 119.30,
       gpsAccuracy: 18.5,
+      readableLocation: '福建省福州市仓山区金山大道',
       userLocationNote: '卧室床头柜第二层',
       aiMainObjects: const ['医保卡', '透明盒子'],
       aiAliases: const ['社保卡'],
@@ -38,6 +39,8 @@ void main() {
     expect(decoded.aiAliases, ['社保卡']);
     expect(decoded.capturedAt, capturedAt);
     expect(decoded.gpsAccuracy, 18.5);
+    expect(decoded.readableLocation, '福建省福州市仓山区金山大道');
+    expect(decoded.summaryForSearch(), contains('拍摄地点: 福建省福州市仓山区金山大道'));
   });
 
   test('RecordStatus parses stored values', () {

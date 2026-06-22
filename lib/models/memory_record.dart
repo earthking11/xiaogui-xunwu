@@ -11,6 +11,7 @@ class MemoryRecord {
     required this.gpsLatitude,
     required this.gpsLongitude,
     required this.gpsAccuracy,
+    this.readableLocation,
     required this.userLocationNote,
     required this.aiMainObjects,
     required this.aiAliases,
@@ -31,6 +32,7 @@ class MemoryRecord {
   final double? gpsLatitude;
   final double? gpsLongitude;
   final double? gpsAccuracy;
+  final String? readableLocation;
   final String? userLocationNote;
   final List<String> aiMainObjects;
   final List<String> aiAliases;
@@ -52,6 +54,7 @@ class MemoryRecord {
       'gps_latitude': gpsLatitude,
       'gps_longitude': gpsLongitude,
       'gps_accuracy': gpsAccuracy,
+      'readable_location': readableLocation,
       'user_location_note': userLocationNote,
       'ai_main_objects': jsonEncode(aiMainObjects),
       'ai_aliases': jsonEncode(aiAliases),
@@ -75,6 +78,7 @@ class MemoryRecord {
       gpsLatitude: _toDouble(map['gps_latitude']),
       gpsLongitude: _toDouble(map['gps_longitude']),
       gpsAccuracy: _toDouble(map['gps_accuracy']),
+      readableLocation: map['readable_location'] as String?,
       userLocationNote: map['user_location_note'] as String?,
       aiMainObjects: _decodeStringList(map['ai_main_objects']),
       aiAliases: _decodeStringList(map['ai_aliases']),
@@ -103,6 +107,7 @@ class MemoryRecord {
     }
 
     addIfPresent('用户位置备注', userLocationNote);
+    addIfPresent('拍摄地点', readableLocation);
     if (aiMainObjects.isNotEmpty) {
       parts.add('主要物品: ${aiMainObjects.join(', ')}');
     }
@@ -132,6 +137,7 @@ class MemoryRecord {
     double? gpsLatitude,
     double? gpsLongitude,
     double? gpsAccuracy,
+    String? readableLocation,
     String? userLocationNote,
     List<String>? aiMainObjects,
     List<String>? aiAliases,
@@ -153,6 +159,7 @@ class MemoryRecord {
       gpsLatitude: gpsLatitude ?? this.gpsLatitude,
       gpsLongitude: gpsLongitude ?? this.gpsLongitude,
       gpsAccuracy: gpsAccuracy ?? this.gpsAccuracy,
+      readableLocation: readableLocation ?? this.readableLocation,
       userLocationNote: userLocationNote ?? this.userLocationNote,
       aiMainObjects: aiMainObjects ?? this.aiMainObjects,
       aiAliases: aiAliases ?? this.aiAliases,
